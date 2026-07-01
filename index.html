@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Fiscal MG — Precificação de NFe</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1419">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fiscal MG">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --bg: #0f1419;
+    --panel: #161d27;
+    --panel-2: #1d2530;
+    --line: #2a3441;
+    --ink: #e7edf5;
+    --ink-dim: #93a3b8;
+    --teal: #2dd4bf;
+    --teal-dim: #134e4a;
+    --amber: #f2b84b;
+    --red: #ef6f6f;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); -webkit-font-smoothing: antialiased;
+    padding-bottom: 80px;
+  }
+  header{
+    padding: 28px 24px 20px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #121821 0%, var(--bg) 100%);
+  }
+  header .eyebrow{
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    color: var(--teal); text-transform: uppercase; margin-bottom: 6px;
+  }
+  header h1{ margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  header p{ margin:0; color: var(--ink-dim); font-size: 13.5px; max-width: 640px; line-height:1.5; }
+  main{ max-width: 980px; margin: 0 auto; padding: 22px 16px; }
+
+  .card{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h2{
+    margin: 0 0 4px; font-size: 14px; font-weight: 700;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .num{
+    font-family: var(--mono); font-size: 11px; color: var(--bg); background: var(--teal);
+    width: 18px; height: 18px; border-radius: 5px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .card .sub{ color: var(--ink-dim); font-size: 12.5px; margin: 0 0 14px; line-height:1.5; }
+
+  textarea{
+    width:100%; min-height: 110px; background: var(--panel-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-family: var(--mono);
+    font-size: 11.5px; resize: vertical;
+  }
+  input[type=file]{
+    display:block; width:100%; padding: 10px; background: var(--panel-2);
+    border: 1px dashed var(--line); border-radius: 8px; color: var(--ink-dim); font-size: 13px;
+  }
+  .or-divider{ display:flex; align-items:center; gap:10px; margin: 12px 0; color: var(--ink-dim); font-size: 11px; }
+  .or-divider::before, .or-divider::after{ content:''; flex:1; height:1px; background: var(--line); }
+
+  .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; }
+  .field label{ display:block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 5px; }
+  .field input[type=number], .field select{
+    width:100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px;
+    padding: 9px 10px; color: var(--ink); font-family: var(--mono); font-size: 13px;
+  }
+  .field .hint{ font-size: 10.5px; color: #5d7186; margin-top:4px; }
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between; gap: 10px;
+    background: var(--panel-2); border:1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+  }
+  .toggle-row span{ font-size: 12.5px; }
+  .switch{ position: relative; width: 38px; height: 22px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider{ position:absolute; inset:0; background:#2a3441; border-radius:22px; cursor:pointer; transition:.15s; }
+  .slider:before{ content:''; position:absolute; height:16px; width:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; }
+  input:checked + .slider{ background: var(--teal); }
+  input:checked + .slider:before{ transform: translateX(16px); }
+
+  button{
+    font-family: var(--sans); font-weight: 600; font-size: 13.5px; border-radius: 8px;
+    border: none; padding: 11px 18px; cursor:pointer; transition: .12s;
+  }
+  .btn-primary{ background: var(--teal); color: #04201c; width:100%; }
+  .btn-primary:hover{ background:#5eead4; }
+  .btn-primary:disabled{ background:#2a3441; color:#5d7186; cursor:not-allowed; }
+  .btn-ghost{ background: transparent; color: var(--ink-dim); border:1px solid var(--line); font-size:12px; padding:8px 12px; }
+  .btn-ghost:hover{ color: var(--ink); border-color:#3a4656; }
+
+  #status{ font-size: 12px; margin-top:10px; min-height:16px; }
+  #status.err{ color: var(--red); }
+  #status.ok{ color: var(--teal); }
+
+  .resultbar{
+    display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .stat{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding: 12px 16px; flex:1; min-width:130px;
+  }
+  .stat .lbl{ font-size:10.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .val{ font-family: var(--mono); font-size: 18px; font-weight:700; margin-top:3px; }
+  .stat.accent .val{ color: var(--teal); }
+
+  table{ width:100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th{
+    text-align:left; font-size: 10.5px; text-transform:uppercase; letter-spacing:.05em;
+    color: var(--ink-dim); border-bottom: 1px solid var(--line); padding: 8px 8px; font-weight:600;
+    white-space:nowrap;
+  }
+  tbody td{ padding: 9px 8px; border-bottom: 1px solid #1d2530; font-family: var(--mono); white-space:nowrap; }
+  tbody td.desc{ font-family: var(--sans); white-space: normal; min-width:170px; }
+  tbody tr:hover{ background: #1a212c; }
+  td.num{ text-align:right; }
+  .tag{
+    font-family: var(--sans); font-size: 10px; padding: 2px 6px; border-radius: 5px;
+    background: var(--teal-dim); color: var(--teal); white-space:nowrap;
+  }
+  .tag.warn{ background:#3a2e12; color: var(--amber); }
+  .price{ color: var(--teal); font-weight:700; }
+  .scrollwrap{ overflow-x:auto; }
+
+  .note{
+    background: #1d2510; border:1px solid #3a4012; color: #c9d96a; border-radius:8px;
+    padding:10px 12px; font-size:11.5px; line-height:1.5; margin-top:12px;
+  }
+  .note b{ color: #e3ec9e; }
+  footer{ text-align:center; color:#3f4d5e; font-size:11px; padding: 24px 16px 8px; }
+
+  #pdfHeader{ display:none; }
+
+  @media print{
+    body{ background:#fff; color:#111; padding-bottom:0; }
+    header, footer, .card:nth-of-type(1), .card:nth-of-type(2), #btnCalc, #btnCsv, #btnPdf{ display:none !important; }
+    #pdfHeader{ display:block !important; margin-bottom:16px; }
+    #pdfHeader h1{ font-size:18px; margin:0 0 2px; }
+    #pdfHeader .sub{ font-size:11px; color:#555; }
+    main{ max-width:100%; padding:0; }
+    .card{ background:#fff; border:none; padding:0; box-shadow:none; }
+    .resultbar{ margin-bottom:14px; }
+    .stat{ background:#f4f6f8; border:1px solid #ddd; }
+    .stat .lbl{ color:#666; }
+    .stat .val{ color:#111; }
+    .stat.accent .val{ color:#0d7d6f; }
+    table{ font-size:10.5px; }
+    thead th{ color:#444; border-bottom:1px solid #999; }
+    tbody td{ border-bottom:1px solid #ddd; color:#111; }
+    .price{ color:#0d7d6f; }
+    .tag{ background:#e3f6f3; color:#0d7d6f; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .tag.warn{ background:#fbedd2; color:#92660d; }
+    .note{ background:#fbfbe9; border:1px solid #d8d870; color:#555; }
+    .scrollwrap{ overflow:visible; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Simples Nacional · ICMS-ST/DIFAL · MG</div>
+  <h1>Calculadora Fiscal — Precificação por NFe</h1>
+  <p>Importe o XML da nota, confira os parâmetros de ICMS-ST de Minas Gerais e obtenha o preço de venda unitário de cada produto com a margem de lucro que você definir.</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2><span class="num">1</span> Importar XML da NFe</h2>
+    <p class="sub">Aceita o XML padrão de nota de entrada (modelo 55). Pode colar o conteúdo ou enviar o arquivo.</p>
+    <input type="file" id="fileInput" accept=".xml">
+    <div class="or-divider">ou cole o XML</div>
+    <textarea id="xmlPaste" placeholder="Cole aqui o conteúdo do XML..."></textarea>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Parâmetros fiscais (MG)</h2>
+    <p class="sub">Usados apenas para itens vindos de fora do estado <b>sem</b> ICMS-ST já destacado no XML. Os valores padrão são genéricos — confira a MVA exata do NCM/CEST do produto no Portal da SEF-MG, pois ela varia por categoria.</p>
+    <div class="grid">
+      <div class="field">
+        <label>ICMS interno em MG (%)</label>
+        <input type="number" id="pIcmsInterno" value="18" step="0.1">
+        <div class="hint">Alíquota geral. Alguns itens têm alíquota própria.</div>
+      </div>
+      <div class="field">
+        <label>ICMS origem / interestadual (%)</label>
+        <input type="number" id="pIcmsOrigem" value="12" step="0.1">
+        <div class="hint">7% (Sul/Sudeste exceto ES) ou 12% (demais regiões/ES)</div>
+      </div>
+      <div class="field">
+        <label>MVA / IVA-ST (%)</label>
+        <input type="number" id="pMva" value="40" step="0.1">
+        <div class="hint">Margem de valor agregado do produto (varia por NCM)</div>
+      </div>
+      <div class="field">
+        <label>FCP (%)</label>
+        <input type="number" id="pFcp" value="2" step="0.1">
+        <div class="hint">Fundo de combate à pobreza, quando aplicável</div>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <span>Estimar ICMS-ST para itens interestaduais sem ST no XML</span>
+      <label class="switch"><input type="checkbox" id="toggleEstST" checked><span class="slider"></span></label>
+    </div>
+    <div class="toggle-row" style="align-items:flex-start;">
+      <span style="padding-top:9px;">Margem de lucro desejada</span>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="number" id="pMargem" value="50" step="0.1" min="0"
+          style="width:80px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:8px 9px; color:var(--ink); font-family:var(--mono); font-size:13px; text-align:right;">
+        <span style="color:var(--ink-dim); font-size:13px;">%</span>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <span>Como aplicar a margem</span>
+      <select id="modoMargem" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-family:var(--mono);font-size:12px;">
+        <option value="markup">Markup sobre custo — Preço = Custo × (1 + margem)</option>
+        <option value="margem">Margem sobre o preço final — Preço = Custo ÷ (1 − margem)</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="btnCalc" disabled>Carregue um XML para calcular</button>
+
+  <div id="results" style="display:none;">
+    <div id="pdfHeader">
+      <h1>Precificação de NFe — Minas Gerais</h1>
+      <div class="sub" id="pdfHeaderSub"></div>
+    </div>
+    <div style="height:18px;"></div>
+    <div class="resultbar" id="statBar"></div>
+    <div class="card">
+      <h2><span class="num">3</span> Preço unitário por produto</h2>
+      <div class="scrollwrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Produto</th><th>NCM</th><th>CFOP</th><th class="num">Qtd</th>
+              <th class="num">Vlr. unit. (NF)</th><th class="num">ICMS-ST/item</th>
+              <th class="num">Custo unit. total</th><th class="num" id="thPreco">Preço venda</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:10px;">
+        <button class="btn-ghost" id="btnCsv">Exportar CSV</button>
+        <button class="btn-ghost" id="btnPdf">Exportar PDF</button>
+      </div>
+      <div class="note" id="noteBox"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Cálculo estimado para apoio à precificação — não substitui apuração fiscal formal. Confira MVA/CEST por NCM no portal da SEF-MG antes de aplicar oficialmente.</footer>
+
+<script>
+let parsedItems = null;
+let headerTotals = null;
+
+function txt(el, tag){
+  if(!el) return null;
+  const n = el.getElementsByTagName(tag)[0];
+  return n ? n.textContent.trim() : null;
+}
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+function setStatus(msg, type){
+  const s = document.getElementById('status');
+  s.textContent = msg;
+  s.className = type || '';
+}
+
+function findFirstDeep(el, tagNames){
+  for(const t of tagNames){
+    const found = el.getElementsByTagName(t);
+    if(found.length) return found[0];
+  }
+  return null;
+}
+
+function parseXml(xmlString){
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlString, 'application/xml');
+  const errorNode = doc.querySelector('parsererror');
+  if(errorNode) throw new Error('XML inválido ou corrompido.');
+
+  const dets = doc.getElementsByTagName('det');
+  if(!dets.length) throw new Error('Nenhum item <det> encontrado — confira se é um XML de NFe (modelo 55).');
+
+  // header-level totals for apportionment fallback
+  const icmsTot = doc.getElementsByTagName('ICMSTot')[0];
+  const totVProd = icmsTot ? num(txt(icmsTot,'vProd')) : 0;
+  const totVFrete = icmsTot ? num(txt(icmsTot,'vFrete')) : 0;
+  const totVDesc = icmsTot ? num(txt(icmsTot,'vDesc')) : 0;
+  const totVOutro = icmsTot ? num(txt(icmsTot,'vOutro')) : 0;
+
+  const items = [];
+
+  for(let i=0;i<dets.length;i++){
+    const det = dets[i];
+    const prod = det.getElementsByTagName('prod')[0];
+    if(!prod) continue;
+
+    const cProd = txt(prod,'cProd') || '';
+    const xProd = txt(prod,'xProd') || '(sem descrição)';
+    const ncm = txt(prod,'NCM') || '';
+    const cfop = txt(prod,'CFOP') || '';
+    const qCom = num(txt(prod,'qCom')) || 1;
+    const vUnCom = num(txt(prod,'vUnCom'));
+    let vProd = num(txt(prod,'vProd'));
+    let vFrete = num(txt(prod,'vFrete'));
+    let vDesc = num(txt(prod,'vDesc'));
+    let vOutro = num(txt(prod,'vOutro'));
+
+    // apportion header-level freight/discount/other if item-level is zero and header total exists
+    if(vFrete === 0 && totVFrete > 0 && totVProd > 0){
+      vFrete = totVFrete * (vProd/totVProd);
+    }
+    if(vDesc === 0 && totVDesc > 0 && totVProd > 0){
+      vDesc = totVDesc * (vProd/totVProd);
+    }
+    if(vOutro === 0 && totVOutro > 0 && totVProd > 0){
+      vOutro = totVOutro * (vProd/totVProd);
+    }
+
+    const imposto = det.getElementsByTagName('imposto')[0];
+    let vIPI = 0, vICMS = 0, vBC = 0, vICMSST = 0, vBCST = 0, pICMSSTxml = null, pMVASTxml = null, vFCPST = 0, orig = '0';
+
+    if(imposto){
+      const ipiNode = imposto.getElementsByTagName('IPI')[0];
+      if(ipiNode) vIPI = num(txt(ipiNode,'vIPI'));
+
+      const icmsWrap = imposto.getElementsByTagName('ICMS')[0];
+      if(icmsWrap){
+        // ICMS sits inside a sub-element like ICMS00, ICMS10, ICMSSN102, etc — grab the first child element
+        const sub = icmsWrap.children[0];
+        if(sub){
+          orig = txt(sub,'orig') || '0';
+          vICMS = num(txt(sub,'vICMS'));
+          vBC = num(txt(sub,'vBC'));
+          vICMSST = num(txt(sub,'vICMSST'));
+          vBCST = num(txt(sub,'vBCST'));
+          vFCPST = num(txt(sub,'vFCPST'));
+          pICMSSTxml = txt(sub,'pICMSST');
+          pMVASTxml = txt(sub,'pMVAST');
+        }
+      }
+    }
+
+    const interestadual = cfop && cfop.trim().startsWith('2');
+    const hasSTfromXml = vICMSST > 0;
+
+    items.push({
+      cProd, xProd, ncm, cfop, qCom, vUnCom, vProd, vFrete, vDesc, vOutro,
+      vIPI, vICMS, vBC, vICMSST, vBCST, vFCPST, orig, interestadual, hasSTfromXml
+    });
+  }
+
+  return items;
+}
+
+function calcular(){
+  const pIcmsInterno = num(document.getElementById('pIcmsInterno').value)/100;
+  const pIcmsOrigem = num(document.getElementById('pIcmsOrigem').value)/100;
+  const pMva = num(document.getElementById('pMva').value)/100;
+  const pFcp = num(document.getElementById('pFcp').value)/100;
+  const estimarST = document.getElementById('toggleEstST').checked;
+  const modoMargem = document.getElementById('modoMargem').value;
+  const pMargem = num(document.getElementById('pMargem').value)/100;
+
+  document.getElementById('thPreco').textContent =
+    `Preço venda (+${(pMargem*100).toLocaleString('pt-BR')}%)`;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  let totalCusto = 0, totalVenda = 0, totalST = 0, countEstimated = 0, countXmlST = 0;
+
+  parsedItems.forEach(it => {
+    const baseCalc = it.vProd - it.vDesc + it.vFrete + it.vOutro + it.vIPI;
+
+    let icmsSTvalue = 0;
+    let tagInfo = '';
+
+    if(it.hasSTfromXml){
+      icmsSTvalue = it.vICMSST + it.vFCPST;
+      tagInfo = '<span class="tag">ST no XML</span>';
+      countXmlST++;
+    } else if(estimarST && it.interestadual){
+      const baseST = baseCalc * (1 + pMva);
+      const icmsProprio = it.vICMS > 0 ? it.vICMS : (it.vBC > 0 ? it.vBC*pIcmsOrigem : baseCalc*pIcmsOrigem);
+      const icmsST = Math.max(0, baseST*pIcmsInterno - icmsProprio);
+      const fcpST = baseST * pFcp;
+      icmsSTvalue = icmsST + fcpST;
+      tagInfo = '<span class="tag warn">ST estimado</span>';
+      countEstimated++;
+    } else {
+      tagInfo = '<span class="tag">—</span>';
+    }
+
+    const custoTotalItem = baseCalc + icmsSTvalue;
+    const custoUnit = custoTotalItem / it.qCom;
+    let precoUnit;
+    if(modoMargem === 'markup'){
+      precoUnit = custoUnit * (1 + pMargem);
+    } else {
+      const divisor = Math.max(0.01, 1 - pMargem);
+      precoUnit = custoUnit / divisor;
+    }
+
+    totalCusto += custoTotalItem;
+    totalVenda += precoUnit * it.qCom;
+    totalST += icmsSTvalue;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="desc">${it.xProd}<br>${tagInfo}</td>
+      <td>${it.ncm}</td>
+      <td>${it.cfop}</td>
+      <td class="num">${it.qCom.toLocaleString('pt-BR')}</td>
+      <td class="num">${it.vUnCom.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td class="num">${(icmsSTvalue/it.qCom).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td class="num">${custoUnit.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td class="num price">R$ ${precoUnit.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('statBar').innerHTML = `
+    <div class="stat"><div class="lbl">Itens</div><div class="val">${parsedItems.length}</div></div>
+    <div class="stat"><div class="lbl">Custo total c/ ST</div><div class="val">R$ ${totalCusto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+    <div class="stat"><div class="lbl">ICMS-ST total</div><div class="val">R$ ${totalST.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+    <div class="stat accent"><div class="lbl">Total de venda sugerido</div><div class="val">R$ ${totalVenda.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+  `;
+
+  document.getElementById('noteBox').innerHTML =
+    `<b>${countXmlST}</b> item(ns) já traziam ICMS-ST destacado no XML (usado diretamente).
+     <b>${countEstimated}</b> item(ns) tiveram ICMS-ST <b>estimado</b> por compra interestadual com os parâmetros da seção 2.
+     Itens sem ST no XML e sem origem interestadual foram tratados como não sujeitos a ST.
+     Confira a MVA/CEST exata por NCM antes de fechar o preço oficialmente — a margem de <b>${(pMargem*100).toLocaleString('pt-BR')}%</b> foi aplicada sobre o custo total (produto − desconto + frete + outras despesas + IPI + ICMS-ST).`;
+
+  document.getElementById('results').style.display = 'block';
+}
+
+function handleXml(xmlString){
+  try{
+    parsedItems = parseXml(xmlString);
+    setStatus(`✓ ${parsedItems.length} produto(s) lido(s) com sucesso.`, 'ok');
+    document.getElementById('btnCalc').disabled = false;
+    document.getElementById('btnCalc').textContent = 'Calcular preços';
+  }catch(e){
+    parsedItems = null;
+    setStatus('Erro: ' + e.message, 'err');
+    document.getElementById('btnCalc').disabled = true;
+    document.getElementById('btnCalc').textContent = 'Carregue um XML para calcular';
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    document.getElementById('xmlPaste').value = '';
+    handleXml(ev.target.result);
+  };
+  reader.readAsText(file, 'ISO-8859-1');
+});
+
+document.getElementById('xmlPaste').addEventListener('input', (e)=>{
+  const v = e.target.value.trim();
+  if(v.length > 50){
+    handleXml(v);
+  }
+});
+
+document.getElementById('btnCalc').addEventListener('click', ()=>{
+  if(!parsedItems || !parsedItems.length) return;
+  calcular();
+});
+
+document.getElementById('btnPdf').addEventListener('click', ()=>{
+  const now = new Date().toLocaleString('pt-BR');
+  const pMargemAtual = document.getElementById('pMargem').value;
+  document.getElementById('pdfHeaderSub').textContent =
+    `Gerado em ${now} · ${parsedItems.length} produto(s) · margem aplicada: ${pMargemAtual}%`;
+  window.print();
+});
+
+document.getElementById('btnCsv').addEventListener('click', ()=>{
+  const rows = [['Produto','NCM','CFOP','Qtd','Valor unit NF','ICMS-ST unit','Custo unit total','Preco venda unit']];
+  const trs = document.querySelectorAll('#tbody tr');
+  trs.forEach(tr=>{
+    const tds = tr.querySelectorAll('td');
+    rows.push([
+      tds[0].childNodes[0].textContent.trim(),
+      tds[1].textContent, tds[2].textContent, tds[3].textContent,
+      tds[4].textContent, tds[5].textContent, tds[6].textContent,
+      tds[7].textContent.replace('R$','').trim()
+    ]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(';')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'precificacao_nfe.csv';
+  a.click();
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
